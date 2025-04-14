@@ -1,7 +1,7 @@
 
 import os
 import tempfile
-from langchain.document_loaders import PyPDFLoader, TextLoader, Docx2txtLoader, UnstructuredExcelLoader
+from langchain_community.document_loaders import PyPDFLoader, TextLoader, Docx2txtLoader, UnstructuredExcelLoader
 
 def load_documents(uploaded_files):
     documents = []
