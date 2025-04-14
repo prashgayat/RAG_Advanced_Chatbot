@@ -2,41 +2,44 @@ import streamlit as st
 from file_utils import load_documents
 from retriever_utils import prepare_retrievers
 from reranker import rerank_results
-from llm_answer import llm_answer  # Make sure this function exists and handles empty input
+from llm_answer import llm_answer
 
 st.set_page_config(page_title="Robust RAG Chatbot with Hybrid Search + Re-ranking")
-
 st.title("📚 Robust RAG Chatbot with Hybrid Search + Re-ranking")
 
-# Upload documents
+# File upload UI
 uploaded_files = st.file_uploader(
     "Upload documents", accept_multiple_files=True, type=["pdf", "txt", "docx", "xlsx"]
 )
 
+# Load and process uploaded files
 if uploaded_files:
-    docs = load_documents(uploaded_files)
+    uploaded_docs = load_documents(uploaded_files)
 
-    # Create hybrid retriever
-    hybrid_retriever = prepare_retrievers(docs)
+    try:
+        hybrid_retriever, keyword_retriever, chunks = prepare_retrievers(uploaded_docs)
+    except ValueError as e:
+        st.error(str(e))
+        st.stop()
 
-    # User query input
+    # Query input
     query = st.text_input("Ask a question about the documents:")
 
     if query:
-        # Hybrid retrieval
-        retrieved_docs = hybrid_retriever.get_relevant_documents(query)
+        # Hybrid retrieval (combine both)
+        docs = hybrid_retriever.similarity_search(query)
+        docs += keyword_retriever.get_relevant_documents(query)
 
-        # Re-ranking
-        if rerank_results and retrieved_docs:
-            retrieved_docs = rerank_results(query, retrieved_docs)
+        # Optional re-ranking
+        if rerank_results and docs:
+            docs = rerank_results(query, docs)
 
-        # Hallucination prevention
-        if not retrieved_docs or len(retrieved_docs) == 0:
-            st.warning("❗ I couldn't find enough relevant information to answer your question from the uploaded documents.")
+        # Hallucination guard
+        if not docs or len(docs) == 0:
+            st.warning("❗ Sorry, I couldn't find enough information to answer that question based on the uploaded files.")
         else:
-            # Get answer from LLM
-            answer = llm_answer(query, retrieved_docs)
-            st.success(answer)
+            answer = llm_answer(query, docs)
+            st.write(answer)
 else:
     st.info("📁 Please upload documents to begin.")
 
