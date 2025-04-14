@@ -6,84 +6,87 @@ This is a domain-specific RAG (Retrieval-Augmented Generation) chatbot designed 
 
 ## 🎯 Key Features
 
-✅ **Multi-format Upload Support**  
-Supports `.pdf`, `.docx`, `.txt`, and `.xlsx` formats.
+### ✅ Multi-format Upload Support
+- Supports `.pdf`, `.docx`, `.txt`, and `.xlsx` formats.
 
-✅ **Semantic Chunking**  
-Uses Recursive Character Text Splitter for meaningful chunk formation.
+### ✅ Semantic Chunking
+- Uses Recursive Character Text Splitter for meaningful chunk formation.
 
-✅ **Hybrid Search (Keyword + Semantic)**  
-Combines keyword-based search (BM25-style) and semantic embeddings (HuggingFace) to improve recall and precision.
+### ✅ Hybrid Search (Semantic + Keyword)
+- Combines keyword-based (BM25) and semantic embedding search (HuggingFace) for improved recall and precision.
 
-✅ **Re-ranking**  
-Ranks retrieved results using a cross-encoder model (`sentence-transformers`).
+### ✅ Re-ranking
+- Uses a cross-encoder model (`sentence-transformers`) to re-rank retrieved documents.
 
-✅ **Hallucination Prevention**  
-Detects when no reliable context is retrieved and shows a fallback message instead of allowing the LLM to guess.
+### ✅ Hallucination Prevention
+- If no reliable context is found, the system prevents the LLM from generating an answer and shows a warning instead.
 
-✅ **Clean UI**  
-Built with Streamlit for fast local testing, currently deployed via GitHub Codespaces.
+### ✅ Clean UI
+- Built with Streamlit, fully functional inside GitHub Codespaces.
 
-✅ **Modular Design**  
-Clearly separated files: `file_utils.py`, `retriever_utils.py`, `llm_answer.py`, `reranker.py`, and `app.py`.
+### ✅ Modular Design
+- Organized code: `file_utils.py`, `retriever_utils.py`, `llm_answer.py`, `reranker.py`, and `app.py`.
 
 ---
 
 ## ⚙️ Tech Stack
 
-- `LangChain` for retrieval pipeline
-- `HuggingFace` for semantic embeddings
-- `sentence-transformers` for re-ranking
-- `OpenRouter` (Zephyr 7B) as the LLM interface
-- `Streamlit` for UI
+| Component           | Technology / Model                                  |
+|--------------------|-----------------------------------------------------|
+| LLM                | **OpenAI GPT-3.5 Turbo** via OpenAI API              |
+| Semantic Embedding | HuggingFace: `all-MiniLM-L6-v2`                      |
+| Keyword Search     | BM25 (`BM25Retriever`)                               |
+| Vector Store       | FAISS                                                |
+| Re-ranking         | `sentence-transformers` CrossEncoder model          |
+| UI Framework       | Streamlit                                            |
+| Orchestration      | LangChain                                            |
+| Dev Environment    | GitHub Codespaces                                    |
 
 ---
 
 ## 🚀 Setup (GitHub Codespaces Recommended)
 
-1. Fork the repo and open in GitHub Codespaces.
-2. Run the following in terminal:
+1. Open the repo in GitHub Codespaces.
+2. Install dependencies:
+    ```bash
+    pip install --force-reinstall -r requirements.txt
+    ```
+3. Run the app:
+    ```bash
+    streamlit run app.py
+    ```
+4. Copy the **external URL** to access the chatbot.
 
-```bash
-pip install --force-reinstall -r requirements.txt
-streamlit run app.py
+---
+
+## 🔐 API Key Setup (OpenAI)
+
+Create a file at `.streamlit/secrets.toml` (do **not** commit it):
+
+```toml
+OPENAI_API_KEY = "your-openai-key-here"
 ```
 
-3. Paste the external URL provided by Streamlit.
-4. Upload your documents, type a query, and view answers with reliability fallback.
+> ⚠️ Never push secrets to GitHub. Use Codespaces' secret management or manual entry.
 
 ---
 
 ## 🛡️ Hallucination Guard
 
-If no reliable documents are retrieved for a query, the app will **not** forward the question to the LLM. Instead, it will show:
+If no meaningful context is retrieved from the uploaded documents, the app avoids calling the LLM and shows:
 
-```
-⚠️ Sorry, I couldn't find enough information to answer that question based on the uploaded files.
-```
-
----
-
-## 🔐 API
-
-Requires OpenRouter API key (free tier available). Add it inside `.streamlit/secrets.toml` like:
-
-```toml
-OPENROUTER_API_KEY = "your-key-here"
-```
-
-> Do **NOT** commit secrets to GitHub. Add it manually in Codespaces only.
+> ⚠️ Sorry, I couldn't find enough information to answer that question based on the uploaded files.
 
 ---
 
 ## 🧩 File Structure
 
-```bash
-├── app.py                 # Streamlit UI
-├── file_utils.py          # Handles file loading + chunking
-├── retriever_utils.py     # Hybrid retriever setup
-├── reranker.py            # Cross-encoder based re-ranking
-├── llm_answer.py          # Generates final LLM answer
+```
+├── app.py                 # Streamlit app logic
+├── file_utils.py          # Handles upload and chunking
+├── retriever_utils.py     # Hybrid retriever: FAISS + BM25
+├── reranker.py            # Re-ranking via cross-encoder
+├── llm_answer.py          # Final LLM answer generation
 ├── requirements.txt
 ├── .streamlit/secrets.toml
 └── README.md
@@ -93,11 +96,12 @@ OPENROUTER_API_KEY = "your-key-here"
 
 ## ✅ Final Notes
 
-- Avoids hallucinations with proper fallbacks
-- Updated to handle all recent LangChain deprecations
-- Easy to port to Streamlit Community Cloud post-Codespaces testing
+- Prevents hallucinations with fallback messaging.
+- Updated to support latest LangChain deprecations.
+- Built for modularity and easy deployment.
 
 ---
 
-Happy RAGging 🎓🚀
+🎓 Happy RAGging! 🚀
+
 
