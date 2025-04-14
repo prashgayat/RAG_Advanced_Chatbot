@@ -1,27 +1,44 @@
-# After loading documents and setting up retriever and reranker...
+import streamlit as st
+from file_utils import load_documents
+from retriever_utils import prepare_retrievers
+from reranker import rerank_results
+from llm_answer import llm_answer  # Make sure this function exists and handles empty input
 
-query = st.text_input("Ask a question about the documents:")
+st.set_page_config(page_title="Robust RAG Chatbot with Hybrid Search + Re-ranking")
 
-if query and uploaded_docs:
-    docs = hybrid_retriever.retrieve(query)
-    
-    # If reranking is enabled
-    if rerank_results and docs:
-        docs = rerank_results(query, docs)
-    
-    # Hallucination prevention check
-    if not docs or len(docs) == 0:
-        st.warning("❗ Sorry, I couldn’t find enough information to answer that question based on the uploaded documents.")
-    else:
-        context = "\n\n".join([doc.page_content for doc in docs[:3]])  # Use top 3 relevant chunks
-        prompt = f"""You are a helpful assistant. Use the below context to answer the question.
-If you cannot find the answer in the context, say you don’t know.
+st.title("📚 Robust RAG Chatbot with Hybrid Search + Re-ranking")
 
-Context:
-{context}
+# Upload documents
+uploaded_files = st.file_uploader(
+    "Upload documents", accept_multiple_files=True, type=["pdf", "txt", "docx", "xlsx"]
+)
 
-Question: {query}
-Answer:"""
+if uploaded_files:
+    docs = load_documents(uploaded_files)
 
-        response = llm.invoke(prompt)
-        st.success(response)
+    # Create hybrid retriever
+    hybrid_retriever = prepare_retrievers(docs)
+
+    # User query input
+    query = st.text_input("Ask a question about the documents:")
+
+    if query:
+        # Hybrid retrieval
+        retrieved_docs = hybrid_retriever.get_relevant_documents(query)
+
+        # Re-ranking
+        if rerank_results and retrieved_docs:
+            retrieved_docs = rerank_results(query, retrieved_docs)
+
+        # Hallucination prevention
+        if not retrieved_docs or len(retrieved_docs) == 0:
+            st.warning("❗ I couldn't find enough relevant information to answer your question from the uploaded documents.")
+        else:
+            # Get answer from LLM
+            answer = llm_answer(query, retrieved_docs)
+            st.success(answer)
+else:
+    st.info("📁 Please upload documents to begin.")
+
+
+
