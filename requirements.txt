@@ -6,8 +6,7 @@ python-dotenv
 semantic-text-splitter
 sentence-transformers
 rank_bm25
-unstructured
-
+unstructured[pdf]
 
 
 
