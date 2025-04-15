@@ -1,11 +1,13 @@
-streamlit==1.32.2
-langchain==0.1.14
-langchain-community           # ❌ remove =0.0.21 version pin
-sentence-transformers==2.2.2
-transformers==4.30.2
-huggingface-hub==0.16.4
-faiss-cpu==1.7.4
-openai==1.16.1
+streamlit
+openai
+langchain
+faiss-cpu
+python-dotenv
+semantic-text-splitter
+sentence-transformers
+rank_bm25
+unstructured
+
 
 
 
