@@ -1,30 +1,22 @@
+from langchain.document_loaders import UnstructuredFileLoader
+from semantic_text_splitter import TextSplitter
+from langchain.docstore.document import Document
 
-import os
-import tempfile
-from langchain_community.document_loaders import PyPDFLoader, TextLoader, Docx2txtLoader, UnstructuredExcelLoader
+def file_loader(file_path):
+    # Load content from uploaded document
+    loader = UnstructuredFileLoader(file_path)
+    documents = loader.load()
 
-def load_documents(uploaded_files):
-    documents = []
-    for file in uploaded_files:
-        try:
-            suffix = os.path.splitext(file.name)[-1]
-            with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
-                tmp.write(file.read())
-                tmp_path = tmp.name
+    # Merge into a single raw string
+    full_text = "\n".join([doc.page_content for doc in documents])
 
-            if suffix == ".pdf":
-                loader = PyPDFLoader(tmp_path)
-            elif suffix == ".txt":
-                loader = TextLoader(tmp_path)
-            elif suffix == ".docx":
-                loader = Docx2txtLoader(tmp_path)
-            elif suffix == ".xlsx":
-                loader = UnstructuredExcelLoader(tmp_path)
-            else:
-                continue
+    # Use semantic chunking for intelligent splits
+    splitter = TextSplitter(
+        chunk_size=300,               # adjust based on your use case
+        chunk_overlap=50,
+        model_name="all-MiniLM-L6-v2" # lightweight & fast
+    )
+    chunks = splitter.split_text(full_text)
 
-            documents.extend(loader.load())
-            os.remove(tmp_path)
-        except Exception as e:
-            print(f"Error loading {file.name}: {str(e)}")
-    return documents
+    # Wrap back into LangChain Document objects
+    return [Document(page_content=chunk) for chunk in chunks]

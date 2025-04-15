@@ -1,47 +1,31 @@
 import streamlit as st
-from file_utils import load_documents
-from retriever_utils import prepare_retrievers
-from reranker import rerank_results
-from llm_answer import llm_answer
+from file_utils import file_loader
+from llm_answer import embed_and_store, get_qa_chain
 
-st.set_page_config(page_title="Robust RAG Chatbot with Hybrid Search + Re-ranking")
-st.title("📚 Robust RAG Chatbot with Hybrid Search + Re-ranking")
+st.set_page_config(page_title="RAG Chatbot", page_icon="🤖")
+st.title("🧠 Domain-Specific RAG Chatbot")
 
-# File upload UI
-uploaded_files = st.file_uploader(
-    "Upload documents", accept_multiple_files=True, type=["pdf", "txt", "docx", "xlsx"]
-)
+uploaded_file = st.file_uploader("Upload a document", type=["pdf", "docx", "txt"])
 
-# Load and process uploaded files
-if uploaded_files:
-    uploaded_docs = load_documents(uploaded_files)
+if uploaded_file:
+    file_path = f"./{uploaded_file.name}"
+    with open(file_path, "wb") as f:
+        f.write(uploaded_file.getbuffer())
 
     try:
-        hybrid_retriever, keyword_retriever, chunks = prepare_retrievers(uploaded_docs)
-    except ValueError as e:
-        st.error(str(e))
-        st.stop()
-
-    # Query input
-    query = st.text_input("Ask a question about the documents:")
-
-    if query:
-        # Hybrid retrieval (combine both)
-        docs = hybrid_retriever.similarity_search(query)
-        docs += keyword_retriever.get_relevant_documents(query)
-
-        # Optional re-ranking
-        if rerank_results and docs:
-            docs = rerank_results(query, docs)
-
-        # Hallucination guard
-        if not docs or len(docs) == 0:
-            st.warning("❗ Sorry, I couldn't find enough information to answer that question based on the uploaded files.")
+        docs = file_loader(file_path)
+        if not docs:
+            st.error("❗ No text chunks created. Please check the document format or content.")
         else:
-            answer = llm_answer(query, docs)
-            st.write(answer)
-else:
-    st.info("📁 Please upload documents to begin.")
+            st.success(f"✅ Loaded {len(docs)} chunks.")
+            vs = embed_and_store(docs)
+            qa_chain = get_qa_chain(vs)
 
+            query = st.text_input("Ask a question from the document:")
+            if query:
+                response = qa_chain.run(query)
+                st.markdown("**💬 Response:**")
+                st.write(response)
 
-
+    except Exception as e:
+        st.error(f"🔥 Error: {e}")

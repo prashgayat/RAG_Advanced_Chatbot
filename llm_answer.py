@@ -1,32 +1,25 @@
-# llm_answer.py
+#LLM answer
 
-from langchain.chat_models import ChatOpenAI
-from langchain.schema import HumanMessage
 import os
+import openai
+from dotenv import load_dotenv
 
-def llm_answer(query, docs):
-    try:
-        # Concatenate the content of the retrieved documents
-        context = "\n\n".join(doc.page_content for doc in docs)
+from langchain.vectorstores import FAISS
+from langchain.embeddings import OpenAIEmbeddings
+from langchain.chains import RetrievalQA
+from langchain.chat_models import ChatOpenAI
 
-        # Compose prompt
-        prompt = f"""You are an expert assistant. Use the below context to answer the question. 
-If the context is irrelevant or insufficient, respond with "I'm not sure based on the provided documents."
+# Load environment variables
+load_dotenv()
+openai.api_key = os.getenv("OPENAI_API_KEY")
 
-Context:
-{context}
+def embed_and_store(docs):
+    embeddings = OpenAIEmbeddings()
+    vectorstore = FAISS.from_documents(docs, embeddings)
+    return vectorstore
 
-Question: {query}
-Answer:"""
-
-        # Call the OpenAI model
-        llm = ChatOpenAI(
-            temperature=0,
-            model_name="gpt-3.5-turbo",
-            openai_api_key=os.getenv("OPENAI_API_KEY")
-        )
-        response = llm([HumanMessage(content=prompt)])
-        return response.content
-
-    except Exception as e:
-        return f"❗ Error generating answer: {str(e)}"
+def get_qa_chain(vectorstore):
+    retriever = vectorstore.as_retriever(search_type="mmr")
+    llm = ChatOpenAI(temperature=0.2)
+    qa_chain = RetrievalQA.from_chain_type(llm=llm, retriever=retriever)
+    return qa_chain
